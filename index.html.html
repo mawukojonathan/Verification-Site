@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Verification Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #717583 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .verification-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .verification-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffd93d);
+        }
+        
+        .coat-of-arms {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 25px;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: white;
+            padding: 10px;
+        }
+        
+        .coat-of-arms img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        
+        .location-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #28a745;
+        }
+        
+        .location-label {
+            font-size: 14px;
+            color: #6c757d;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .location-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+
+        
+        .status-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border-radius: 12px;
+            margin: 25px 0;
+            border: 2px solid #28a745;
+        }
+        
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status-text {
+            font-size: 16px;
+            color: #155724;
+            font-weight: 600;
+        }
+        
+        .share-location-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .share-location-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .share-location-btn:active {
+            transform: translateY(0);
+        }
+        
+        .share-location-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .verification-badge {
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 20px;
+            display: none;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="coat-of-arms">
+            <img id="coatOfArmsImage" src="Coat of arms of Ghana_600x400.png" alt="Ghana Coat of Arms">
+        </div>
+        
+        <div class="header">
+            <h1>Official Verification</h1>
+            <p>Click below to verify access</p>
+        </div>
+        
+
+        
+        <div class="status-section" id="statusSection" style="display: none;">
+            <div class="status-icon">✓</div>
+            <div class="status-text">Verification Successful</div>
+        </div>
+        
+        <button class="share-location-btn" id="shareLocationBtn" onclick="requestVerification()">
+            <span id="btnText">Verify Access</span>
+            <div class="loading-spinner hidden" id="loadingSpinner"></div>
+        </button>
+        
+        <div class="verification-badge" id="verificationBadge">✓ Verified</div>
+    </div>
+
+    <script>
+
+        
+        function requestVerification() {
+            const btn = document.getElementById('shareLocationBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('loadingSpinner');
+            const statusSection = document.getElementById('statusSection');
+            const verificationBadge = document.getElementById('verificationBadge');
+            
+            // Show loading state
+            btnText.textContent = 'Verifying...';
+            spinner.classList.remove('hidden');
+            btn.disabled = true;
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // Success - verification complete
+                        setTimeout(() => {
+                            // Show success status
+                            statusSection.style.display = 'flex';
+                            
+                            // Show verification badge at bottom
+                            verificationBadge.style.display = 'block';
+                            
+                            // Update button
+                            btnText.textContent = 'Verification Complete';
+                            spinner.classList.add('hidden');
+                            btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                        }, 1000);
+                    },
+                    function(error) {
+                        // Error handling
+                        spinner.classList.add('hidden');
+                        btn.disabled = false;
+                        btnText.textContent = 'Verify Access';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                alert("Access denied. Please allow verification to continue.");
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                alert("Verification unavailable.");
+                                break;
+                            case error.TIMEOUT:
+                                alert("Verification request timed out.");
+                                break;
+                            default:
+                                alert("An unknown error occurred during verification.");
+                                break;
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                alert("Browser verification is not supported.");
+                spinner.classList.add('hidden');
+                btn.disabled = false;
+                btnText.textContent = 'Verify Access';
+            }
+        }
+        
+        // Initialize and load the coat of arms
+        window.addEventListener('load', function() {
+            // Load the uploaded coat of arms image
+            loadCoatOfArms();
+        });
+    </script>
+</body>
+</html>
