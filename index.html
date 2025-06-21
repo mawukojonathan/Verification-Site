@@ -9,16 +9,18 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
         }
         
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #717583 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            -webkit-text-size-adjust: 100%; /* Prevent font scaling in landscape */
         }
         
         .verification-container {
@@ -31,6 +33,7 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
         
         .verification-container::before {
@@ -57,6 +60,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            -webkit-user-drag: none; /* Prevent image drag on iOS */
         }
         
         .header {
@@ -105,8 +109,6 @@
             border: 2px solid #e9ecef;
         }
         
-
-        
         .status-section {
             display: flex;
             align-items: center;
@@ -149,6 +151,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 20px;
+            -webkit-appearance: none; /* Remove default iOS button styling */
+            -webkit-touch-callout: none; /* Disable callout on tap */
         }
         
         .share-location-btn:hover {
@@ -174,11 +178,17 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: 10px;
+            -webkit-animation: spin 1s linear infinite; /* Safari animation prefix */
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        @-webkit-keyframes spin { /* Safari keyframes */
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
         }
         
         .hidden {
@@ -198,6 +208,17 @@
             display: none;
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
         }
+        
+        /* iOS-specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            .share-location-btn {
+                padding: 17px 15px; /* Slightly larger tap target for iOS */
+            }
+            
+            body {
+                -webkit-font-smoothing: antialiased;
+            }
+        }
     </style>
 </head>
 <body>
@@ -211,14 +232,12 @@
             <p>Click below to verify access</p>
         </div>
         
-
-        
         <div class="status-section" id="statusSection" style="display: none;">
             <div class="status-icon">✓</div>
             <div class="status-text">Verification Successful</div>
         </div>
         
-        <button class="share-location-btn" id="shareLocationBtn" onclick="requestVerification()">
+        <button class="share-location-btn" id="shareLocationBtn">
             <span id="btnText">Verify Access</span>
             <div class="loading-spinner hidden" id="loadingSpinner"></div>
         </button>
@@ -227,77 +246,99 @@
     </div>
 
     <script>
-
-        
-        function requestVerification() {
+        document.addEventListener('DOMContentLoaded', function() {
             const btn = document.getElementById('shareLocationBtn');
             const btnText = document.getElementById('btnText');
             const spinner = document.getElementById('loadingSpinner');
             const statusSection = document.getElementById('statusSection');
             const verificationBadge = document.getElementById('verificationBadge');
             
-            // Show loading state
-            btnText.textContent = 'Verifying...';
-            spinner.classList.remove('hidden');
-            btn.disabled = true;
+            // iOS detection
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        // Success - verification complete
-                        setTimeout(() => {
-                            // Show success status
-                            statusSection.style.display = 'flex';
-                            
-                            // Show verification badge at bottom
-                            verificationBadge.style.display = 'block';
-                            
-                            // Update button
-                            btnText.textContent = 'Verification Complete';
+            // Improved click handler for iOS
+            btn.addEventListener(isIOS ? 'touchstart' : 'click', function(e) {
+                e.preventDefault();
+                requestVerification();
+            }, { passive: false });
+            
+            function requestVerification() {
+                // Show loading state
+                btnText.textContent = 'Verifying...';
+                spinner.classList.remove('hidden');
+                btn.disabled = true;
+                
+                if (navigator.geolocation) {
+                    // iOS-specific timeout handling
+                    const timeout = isIOS ? 15000 : 10000;
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            // Success - verification complete
+                            setTimeout(() => {
+                                // Show success status
+                                statusSection.style.display = 'flex';
+                                
+                                // Show verification badge at bottom
+                                verificationBadge.style.display = 'block';
+                                
+                                // Update button
+                                btnText.textContent = 'Verification Complete';
+                                spinner.classList.add('hidden');
+                                btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                            }, 1000);
+                        },
+                        function(error) {
+                            // Error handling
                             spinner.classList.add('hidden');
-                            btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-                        }, 1000);
-                    },
-                    function(error) {
-                        // Error handling
-                        spinner.classList.add('hidden');
-                        btn.disabled = false;
-                        btnText.textContent = 'Verify Access';
-                        
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                alert("Access denied. Please allow verification to continue.");
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                alert("Verification unavailable.");
-                                break;
-                            case error.TIMEOUT:
-                                alert("Verification request timed out.");
-                                break;
-                            default:
-                                alert("An unknown error occurred during verification.");
-                                break;
+                            btn.disabled = false;
+                            btnText.textContent = 'Verify Access';
+                            
+                            let errorMessage = "An error occurred during verification.";
+                            
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMessage = "Access denied. Please allow location access in Settings to continue.";
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMessage = "Location information unavailable.";
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMessage = "Verification request timed out. Please try again.";
+                                    break;
+                            }
+                            
+                            // iOS-specific alert handling
+                            if (isIOS) {
+                                setTimeout(() => {
+                                    alert(errorMessage);
+                                }, 100);
+                            } else {
+                                alert(errorMessage);
+                            }
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: timeout,
+                            maximumAge: 0
                         }
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
-                );
-            } else {
-                alert("Browser verification is not supported.");
-                spinner.classList.add('hidden');
-                btn.disabled = false;
-                btnText.textContent = 'Verify Access';
+                    );
+                } else {
+                    alert("Browser verification is not supported.");
+                    spinner.classList.add('hidden');
+                    btn.disabled = false;
+                    btnText.textContent = 'Verify Access';
+                }
             }
-        }
-        
-        // Initialize and load the coat of arms
-        window.addEventListener('load', function() {
-            // Load the uploaded coat of arms image
+            
+            // Load the coat of arms
             loadCoatOfArms();
         });
+        
+        function loadCoatOfArms() {
+            // Implementation for loading the coat of arms image
+        }
     </script>
 </body>
 </html>
